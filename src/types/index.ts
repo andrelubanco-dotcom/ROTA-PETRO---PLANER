@@ -200,6 +200,79 @@ export interface UserSettings {
   confettiEnabled: boolean;
 }
 
+export type UserRole = 'admin' | 'customer';
+
+export type UserAccessStatus = 
+  | 'pending_payment'
+  | 'active'
+  | 'suspended'
+  | 'refunded'
+  | 'chargeback'
+  | 'deleted';
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  role: UserRole;
+  isAdmin: boolean;
+  isEntitled: boolean;
+  accessStatus: UserAccessStatus;
+  emailVerified: boolean;
+}
+
+export interface Entitlement {
+  userId: string;
+  productId: 'rota_petro_lifetime';
+  status: UserAccessStatus;
+  paymentType: 'one_time';
+  priceCents: number;
+  currency: 'BRL';
+  grantedAt: string;
+  source: 'mercadopago' | 'admin_grant';
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  userId: string;
+  userEmail: string;
+  productId: string;
+  amountCents: number;
+  currency: string;
+  status: 'pending' | 'approved' | 'rejected' | 'refunded' | 'cancelled';
+  mercadoPagoPreferenceId?: string;
+  mercadoPagoPaymentId?: string;
+  initPoint?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserListItem {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  role: UserRole;
+  isAdmin: boolean;
+  isEntitled: boolean;
+  accessStatus: UserAccessStatus;
+  createdAt: string;
+  lastLoginAt?: string;
+  disabled?: boolean;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  adminUid: string;
+  adminEmail: string;
+  targetUid: string;
+  action: 'grant_access' | 'revoke_access' | 'suspend' | 'reactivate' | 'revoke_sessions';
+  details?: string;
+  createdAt: string;
+}
+
 export type ActiveTab = 
   | 'dashboard'
   | 'plano_hoje'
@@ -211,4 +284,8 @@ export type ActiveTab =
   | 'recuperar_atrasos'
   | 'simulados'
   | 'google_workspace'
-  | 'configuracoes';
+  | 'configuracoes'
+  | 'admin_panel'
+  | 'termos_privacidade'
+  | 'paywall';
+

@@ -1,0 +1,52 @@
+{
+  "entities": {
+    "users": {
+      "fields": {
+        "id": { "type": "string", "description": "User UID" },
+        "email": { "type": "string", "description": "User verified Google email" },
+        "name": { "type": "string", "description": "Display name" },
+        "photoUrl": { "type": "string", "description": "Avatar URL" },
+        "createdAt": { "type": "string", "description": "Account creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last activity ISO timestamp" }
+      }
+    },
+    "entitlements": {
+      "fields": {
+        "userId": { "type": "string", "description": "User UID" },
+        "productId": { "type": "string", "description": "rota_petro_lifetime" },
+        "status": { "type": "string", "description": "active | pending_payment | suspended | refunded | chargeback" },
+        "paymentType": { "type": "string", "description": "one_time" },
+        "priceCents": { "type": "number", "description": "4990" },
+        "currency": { "type": "string", "description": "BRL" },
+        "grantedAt": { "type": "string", "description": "Timestamp when access was granted" },
+        "source": { "type": "string", "description": "mercadopago | admin_grant" }
+      }
+    },
+    "orders": {
+      "fields": {
+        "orderId": { "type": "string", "description": "Canonical server order ID" },
+        "userId": { "type": "string", "description": "Buyer UID" },
+        "userEmail": { "type": "string", "description": "Buyer email" },
+        "productId": { "type": "string", "description": "rota_petro_lifetime" },
+        "amountCents": { "type": "number", "description": "4990" },
+        "currency": { "type": "string", "description": "BRL" },
+        "status": { "type": "string", "description": "pending | approved | rejected | refunded | cancelled" },
+        "mercadoPagoPreferenceId": { "type": "string", "description": "MP Preference ID" },
+        "mercadoPagoPaymentId": { "type": "string", "description": "MP Payment ID" },
+        "createdAt": { "type": "string", "description": "Order creation date" },
+        "updatedAt": { "type": "string", "description": "Order update date" }
+      }
+    },
+    "adminAudit": {
+      "fields": {
+        "id": { "type": "string", "description": "Audit event ID" },
+        "adminUid": { "type": "string", "description": "Admin UID" },
+        "adminEmail": { "type": "string", "description": "Admin email" },
+        "targetUid": { "type": "string", "description": "Affected user UID" },
+        "action": { "type": "string", "description": "grant_access | revoke_access | suspend | reactivate | revoke_sessions" },
+        "details": { "type": "string", "description": "Action details" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      }
+    }
+  }
+}

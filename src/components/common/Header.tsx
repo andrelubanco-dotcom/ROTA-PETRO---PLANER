@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStudy } from '../../context/StudyContext';
+import { useAuth } from '../../context/AuthContext';
 import { ExamTarget } from '../../types';
 import { 
   Sparkles, 
@@ -11,7 +12,13 @@ import {
   CheckCircle2, 
   Volume2, 
   VolumeX, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  Database,
+  LogIn,
+  LogOut,
+  ShieldCheck,
+  Crown,
+  CreditCard
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -25,8 +32,11 @@ export const Header: React.FC = () => {
     overdueRevisions,
     setActiveTab,
     openFocusMode,
-    tasks
+    tasks,
+    supabaseState
   } = useStudy();
+
+  const { user, login, logout, isAuthenticating } = useAuth();
 
   // Calculate days remaining to exams based on current simulation date 2026-08-29
   const currentDate = new Date('2026-08-29T00:00:00');
@@ -147,6 +157,58 @@ export const Header: React.FC = () => {
             </button>
           )}
 
+          {/* Supabase Cloud Sync Quick Badge */}
+          <button
+            id="header-supabase-btn"
+            onClick={() => setActiveTab('configuracoes')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-xs cursor-pointer ${
+              supabaseState.isConnected
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-emerald-700'
+            }`}
+            title={supabaseState.isConnected ? 'Supabase Conectado (Sincronização em Nuvem Ativa)' : 'Configurar Banco de Dados Supabase'}
+          >
+            <Database className={`w-3.5 h-3.5 ${supabaseState.isConnected ? 'text-emerald-600' : 'text-slate-500'}`} />
+            <span className="hidden sm:inline">Supabase:</span>
+            <span>{supabaseState.isConnected ? 'Online' : 'Local'}</span>
+          </button>
+
+          {/* Admin Panel Quick Access Button */}
+          {user?.isAdmin && (
+            <button
+              id="header-admin-panel-btn"
+              onClick={() => setActiveTab('admin_panel')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-300 hover:bg-purple-100 transition-all shadow-xs cursor-pointer"
+              title="Acessar Painel de Controle Administrativo"
+            >
+              <Crown className="w-3.5 h-3.5 text-purple-600" />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+          )}
+
+          {/* Plan Status / Paywall Trigger Button */}
+          {user && !user.isEntitled && (
+            <button
+              id="header-unlock-plan-btn"
+              onClick={() => setActiveTab('paywall')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer"
+              title="Liberar Acesso Vitalício por R$ 49,90"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Desbloquear R$ 49,90</span>
+            </button>
+          )}
+
+          {user && user.isEntitled && !user.isAdmin && (
+            <div 
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"
+              title="Acesso vitalício ativo"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Vitalício</span>
+            </div>
+          )}
+
           {/* Google Workspace Hub quick access */}
           <button
             id="header-workspace-btn"
@@ -184,6 +246,48 @@ export const Header: React.FC = () => {
             >
               <Clock className="w-3.5 h-3.5 text-teal-300" />
               <span className="hidden sm:inline">Focar Agora</span>
+            </button>
+          )}
+
+          {/* User Auth Profile / Login Button */}
+          {user ? (
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+              {user.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName || 'Usuário'} 
+                  referrerPolicy="no-referrer"
+                  className="w-7 h-7 rounded-full border border-slate-200"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center">
+                  {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="hidden xl:block text-left">
+                <div className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[110px]">
+                  {user.displayName || 'Aluno'}
+                </div>
+                <div className="text-[10px] text-slate-500 truncate max-w-[110px]">
+                  {user.isAdmin ? 'Admin' : user.isEntitled ? 'Vitalício' : 'Pendente'}
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                title="Encerrar Sessão (Logout)"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={login}
+              disabled={isAuthenticating}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Entrar com Google</span>
             </button>
           )}
 

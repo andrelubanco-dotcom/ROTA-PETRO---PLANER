@@ -3,6 +3,7 @@
   "appId": "1:956435040901:web:1fbd335ba1702a4d82b7ec",
   "apiKey": "AIzaSyCOzSPEgqAVMgHIMkvNWB1zw8jPYn1M4eQ",
   "authDomain": "useful-data-g8chg.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-rotapetroplanner-dc448465-4297-4e97-9aa9-3f5d9a96a663",
   "storageBucket": "useful-data-g8chg.firebasestorage.app",
   "messagingSenderId": "956435040901",
   "measurementId": "",

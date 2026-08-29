@@ -24,6 +24,23 @@ import {
 } from '../data/initialData';
 import { playSuccessChime, triggerConfetti } from '../utils/audio';
 import { rebalanceTasksRespectingDeadline, generateFullPostEditalTasks, HARD_DEADLINE_DATE } from '../utils/scheduleGenerator';
+import { 
+  getSupabaseConfig, 
+  saveCustomSupabaseConfig, 
+  clearCustomSupabaseConfig, 
+  testSupabaseConnection, 
+  pushAllToSupabase, 
+  pullFromSupabase,
+  SupabaseConfig 
+} from '../lib/supabase';
+
+export interface SupabaseSyncState {
+  isConfigured: boolean;
+  isConnected: boolean;
+  isSyncing: boolean;
+  lastSyncedAt: string | null;
+  configSource: 'env' | 'custom' | 'none';
+}
 
 interface StudyContextType {
   activeTab: ActiveTab;
@@ -37,6 +54,14 @@ interface StudyContextType {
   simulados: SimuladoRecord[];
   dailyLogs: DailyStudyLog[];
   settings: UserSettings;
+  
+  // Supabase Cloud Sync
+  supabaseState: SupabaseSyncState;
+  syncNowWithSupabase: () => Promise<{ success: boolean; message: string }>;
+  pullFromSupabaseNow: () => Promise<{ success: boolean; message: string }>;
+  saveSupabaseCredentials: (url: string, key: string) => Promise<{ success: boolean; message: string }>;
+  clearSupabaseCredentials: () => void;
+  testSupabase: (url?: string, key?: string) => Promise<{ success: boolean; message: string }>;
   
   // Focus Mode
   focusTask: Task | null;
@@ -740,6 +765,137 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Supabase State
+  const [supabaseState, setSupabaseState] = useState<SupabaseSyncState>(() => {
+    const config = getSupabaseConfig();
+    return {
+      isConfigured: config.isConfigured,
+      isConnected: false,
+      isSyncing: false,
+      lastSyncedAt: localStorage.getItem('rota_petro_supabase_last_sync') || null,
+      configSource: config.source,
+    };
+  });
+
+  // Verify Supabase connection on load if configured
+  useEffect(() => {
+    const checkSupabase = async () => {
+      const config = getSupabaseConfig();
+      if (config.isConfigured) {
+        const res = await testSupabaseConnection(config.url, config.anonKey);
+        setSupabaseState(prev => ({
+          ...prev,
+          isConfigured: true,
+          isConnected: res.success,
+          configSource: config.source,
+        }));
+      }
+    };
+    checkSupabase();
+  }, []);
+
+  const testSupabase = async (url?: string, key?: string) => {
+    return await testSupabaseConnection(url, key);
+  };
+
+  const saveSupabaseCredentials = async (url: string, anonKey: string) => {
+    saveCustomSupabaseConfig(url, anonKey);
+    const res = await testSupabaseConnection(url, anonKey);
+    setSupabaseState({
+      isConfigured: true,
+      isConnected: res.success,
+      isSyncing: false,
+      lastSyncedAt: null,
+      configSource: 'custom',
+    });
+    return res;
+  };
+
+  const clearSupabaseCredentials = () => {
+    clearCustomSupabaseConfig();
+    const config = getSupabaseConfig();
+    setSupabaseState({
+      isConfigured: config.isConfigured,
+      isConnected: false,
+      isSyncing: false,
+      lastSyncedAt: null,
+      configSource: config.source,
+    });
+  };
+
+  const syncNowWithSupabase = async () => {
+    if (!supabaseState.isConfigured) {
+      return { success: false, message: 'Supabase não está configurado.' };
+    }
+    setSupabaseState(prev => ({ ...prev, isSyncing: true }));
+    const userId = settings.userName ? `user-${settings.userName.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'aluno_principal';
+    
+    const result = await pushAllToSupabase({
+      userId,
+      settings,
+      tasks,
+      topics,
+      revisions,
+      questions: questionRecords,
+      simulados,
+      dailyLogs,
+    });
+
+    const nowIso = new Date().toLocaleString('pt-BR');
+    if (result.success) {
+      localStorage.setItem('rota_petro_supabase_last_sync', nowIso);
+      setSupabaseState(prev => ({
+        ...prev,
+        isSyncing: false,
+        isConnected: true,
+        lastSyncedAt: nowIso,
+      }));
+    } else {
+      setSupabaseState(prev => ({
+        ...prev,
+        isSyncing: false,
+        isConnected: false,
+      }));
+    }
+
+    return result;
+  };
+
+  const pullFromSupabaseNow = async () => {
+    if (!supabaseState.isConfigured) {
+      return { success: false, message: 'Supabase não está configurado.' };
+    }
+    setSupabaseState(prev => ({ ...prev, isSyncing: true }));
+    const userId = settings.userName ? `user-${settings.userName.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'aluno_principal';
+    
+    const result = await pullFromSupabase(userId);
+
+    if (result.success && result.data) {
+      if (result.data.topics && result.data.topics.length > 0) setTopics(result.data.topics);
+      if (result.data.tasks && result.data.tasks.length > 0) setTasks(result.data.tasks);
+      if (result.data.revisions && result.data.revisions.length > 0) setRevisions(result.data.revisions);
+      if (result.data.questions && result.data.questions.length > 0) setQuestionRecords(result.data.questions);
+      if (result.data.simulados && result.data.simulados.length > 0) setSimulados(result.data.simulados);
+      if (result.data.settings) setSettings(result.data.settings);
+
+      const nowIso = new Date().toLocaleString('pt-BR');
+      localStorage.setItem('rota_petro_supabase_last_sync', nowIso);
+      setSupabaseState(prev => ({
+        ...prev,
+        isSyncing: false,
+        isConnected: true,
+        lastSyncedAt: nowIso,
+      }));
+    } else {
+      setSupabaseState(prev => ({
+        ...prev,
+        isSyncing: false,
+      }));
+    }
+
+    return { success: result.success, message: result.message };
+  };
+
   // Computed data
   const todayStr = '2026-08-29';
   const todayTasks = tasks.filter(t => t.date === todayStr && !t.isOverdue);
@@ -774,6 +930,12 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         simulados,
         dailyLogs,
         settings,
+        supabaseState,
+        syncNowWithSupabase,
+        pullFromSupabaseNow,
+        saveSupabaseCredentials,
+        clearSupabaseCredentials,
+        testSupabase,
         focusTask,
         isFocusModalOpen,
         openFocusMode,

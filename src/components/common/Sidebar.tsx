@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStudy } from '../../context/StudyContext';
+import { useAuth } from '../../context/AuthContext';
 import { ActiveTab } from '../../types';
 import {
   LayoutDashboard,
@@ -14,7 +15,11 @@ import {
   Settings,
   Sparkles,
   Zap,
-  Target
+  Target,
+  Crown,
+  ShieldCheck,
+  CreditCard,
+  FileText
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -29,6 +34,8 @@ export const Sidebar: React.FC = () => {
     settings,
   } = useStudy();
 
+  const { user } = useAuth();
+
   const pendingTodayTasks = todayTasks.filter(t => t.status === 'pendente').length;
   const pendingRevisionsToday = todayRevisions.length;
   const totalOverdue = overdueTasks.length + overdueRevisions.length;
@@ -42,6 +49,7 @@ export const Sidebar: React.FC = () => {
     activeText: string;
     badge?: number;
     badgeColor?: string;
+    adminOnly?: boolean;
   }
 
   const navItems: NavItem[] = [
@@ -139,6 +147,23 @@ export const Sidebar: React.FC = () => {
       activeBg: 'bg-slate-100 text-slate-900 border-slate-600',
       activeText: 'text-slate-700',
     },
+    ...(user?.isAdmin ? [{
+      id: 'admin_panel' as ActiveTab,
+      label: 'Painel Admin',
+      icon: Crown,
+      color: '#9333EA',
+      activeBg: 'bg-purple-50 text-purple-900 border-purple-600',
+      activeText: 'text-purple-700',
+      badgeColor: 'bg-purple-600 text-white',
+    }] : []),
+    ...(!user?.isEntitled ? [{
+      id: 'paywall' as ActiveTab,
+      label: 'Desbloquear R$ 49,90',
+      icon: CreditCard,
+      color: '#D97706',
+      activeBg: 'bg-amber-50 text-amber-900 border-amber-500',
+      activeText: 'text-amber-700',
+    }] : []),
   ];
 
   return (
@@ -181,7 +206,7 @@ export const Sidebar: React.FC = () => {
               key={item.id}
               id={`nav-item-${item.id}`}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left group ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left group cursor-pointer ${
                 isActive
                   ? `${item.activeBg} border-l-4 shadow-xs font-bold`
                   : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
@@ -208,6 +233,18 @@ export const Sidebar: React.FC = () => {
             </button>
           );
         })}
+
+        <div className="pt-4 border-t border-slate-100">
+          <button
+            onClick={() => setActiveTab('termos_privacidade')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer ${
+              activeTab === 'termos_privacidade' ? 'bg-slate-100 text-slate-900 font-bold' : ''
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Termos e Privacidade</span>
+          </button>
+        </div>
       </div>
 
       {/* Bottom TDAH Progress Card */}
@@ -231,7 +268,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           <div className="pt-1 flex items-center justify-between text-[11px] text-slate-700">
-            <span>{settings.userName}</span>
+            <span>{user?.displayName || settings.userName}</span>
             <span className="font-semibold text-teal-700">Meta: 3.5h/dia</span>
           </div>
         </div>
@@ -239,3 +276,4 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
+
