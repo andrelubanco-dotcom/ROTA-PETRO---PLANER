@@ -1,0 +1,8 @@
+{
+  "name": "ROTA PETRO — Planner de Estudos",
+  "description": "Organizador inteligente e visual de estudos para concursos Transpetro (Dutos e Terminais) e Petrobras (Técnico de Operações), com suporte especializado para TDAH e método de blocos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
